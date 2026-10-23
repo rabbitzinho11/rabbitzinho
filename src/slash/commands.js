@@ -275,6 +275,43 @@ module.exports = function buildSlashCommands(_prefix) {
         .setRequired(false),
     );
 
+  const play = new SlashCommandBuilder()
+    .setName("play")
+    .setDescription("Play music in your current voice channel")
+    .setDescriptionLocalizations({
+      "pt-BR": "Reproduzir música no teu canal de voz atual",
+    })
+    .addStringOption((opt) =>
+      opt
+        .setName("query")
+        .setDescription("Song name or direct URL")
+        .setDescriptionLocalizations({
+          "pt-BR": "Nome da música ou link direto",
+        })
+        .setRequired(true),
+    );
+
+  const stop = new SlashCommandBuilder()
+    .setName("stop")
+    .setDescription("Stop the active music playback")
+    .setDescriptionLocalizations({
+      "pt-BR": "Parar a reprodução ativa de música",
+    });
+
+  const queue = new SlashCommandBuilder()
+    .setName("queue")
+    .setDescription("Show the music queue")
+    .setDescriptionLocalizations({
+      "pt-BR": "Mostrar a fila de música",
+    });
+
+  const nowplaying = new SlashCommandBuilder()
+    .setName("nowplaying")
+    .setDescription("Show the current track")
+    .setDescriptionLocalizations({
+      "pt-BR": "Mostrar a faixa atual",
+    });
+
   return [
     warn,
     mute,
@@ -289,5 +326,9 @@ module.exports = function buildSlashCommands(_prefix) {
     poll,
     rank,
     leaderboard,
+    play,
+    stop,
+    queue,
+    nowplaying,
   ].map((c) => c.toJSON());
 };

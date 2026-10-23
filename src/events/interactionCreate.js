@@ -22,6 +22,10 @@ const helpSlash = require("../slash/help");
 const pollSlash = require("../slash/poll");
 const rankSlash = require("../slash/rank");
 const leaderboardSlash = require("../slash/leaderboard");
+const playSlash = require("../slash/play");
+const stopSlash = require("../slash/stop");
+const queueSlash = require("../slash/queue");
+const nowPlayingSlash = require("../slash/nowplaying");
 
 const { getFeature } = require("../systems/featuresService");
 
@@ -50,6 +54,10 @@ const commandHandlers = new Map([
   ["poll", pollSlash],
   ["rank", rankSlash],
   ["leaderboard", leaderboardSlash],
+  ["play", playSlash],
+  ["stop", stopSlash],
+  ["queue", queueSlash],
+  ["nowplaying", nowPlayingSlash],
 ]);
 
 // Botão de verificação: "verify:<roleId>"

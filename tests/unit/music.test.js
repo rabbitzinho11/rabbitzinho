@@ -2,17 +2,12 @@ const { test, ok } = require("./_harness");
 const {
   normalizeMediaQuery,
   isPlayableUrl,
-  pauseGuildMusic,
-  resumeGuildMusic,
-  skipGuildMusic,
   enqueueGuildTrack,
   getGuildQueue,
   getNowPlaying,
-  getGuildMusicState,
   guildPlayers,
   playGuildMusic,
-  advanceGuildQueue,
-  clearGuildQueue,
+  stopGuildMusic,
 } = require("../../src/systems/music");
 
 test("normalizeMediaQuery trims whitespace and preserves playable URLs", async () => {
@@ -23,42 +18,6 @@ test("normalizeMediaQuery trims whitespace and preserves playable URLs", async (
 test("isPlayableUrl accepts direct audio URLs and rejects empty input", async () => {
   ok(isPlayableUrl("https://example.com/song.mp3") === true, "direct audio URLs should be accepted");
   ok(isPlayableUrl("   ") === false, "blank values should be rejected");
-});
-
-test("pause/resume/skip control the playback lifecycle", async () => {
-  const fakeSession = {
-    player: {
-      pause: () => {
-        fakeSession.player.state = { status: "paused" };
-      },
-      unpause: () => {
-        fakeSession.player.state = { status: "playing" };
-      },
-      stop: () => {
-        fakeSession.player.state = { status: "stopped" };
-      },
-      state: { status: "playing" },
-    },
-    connection: { destroy: () => {} },
-    channelId: "channel-1",
-    lastTrack: { title: "Song" },
-  };
-
-  guildPlayers.set("guild-1", fakeSession);
-
-  const paused = await pauseGuildMusic("guild-1");
-  ok(paused.ok === true && paused.status === "paused", "pause should mark the session as paused");
-
-  const resumed = await resumeGuildMusic("guild-1");
-  ok(resumed.ok === true && resumed.status === "playing", "resume should restore playback");
-
-  const skipped = await skipGuildMusic("guild-1");
-  ok(skipped.ok === true && skipped.status === "skipped", "skip should flag the session as skipped");
-
-  const state = getGuildMusicState("guild-1");
-  ok(state.ok === false || state.status === "stopped", "skip should leave the guild without a live session");
-
-  guildPlayers.delete("guild-1");
 });
 
 test("queue tracks and expose the current track", async () => {
@@ -74,8 +33,8 @@ test("queue tracks and expose the current track", async () => {
   const queue = getGuildQueue("guild-2");
   ok(Array.isArray(queue) && queue.length === 2, "queue access should return the guild queue");
 
-  const cleared = await skipGuildMusic("guild-2");
-  ok(cleared.ok === true || cleared.status === "skipped", "skip should clear the active tracked state");
+  const stopped = await stopGuildMusic("guild-2");
+  ok(stopped.ok === true && stopped.status === "stopped", "stop should clear the active tracked state");
 });
 
 test("new play requests queue behind the active track instead of replacing it", async () => {
@@ -103,16 +62,5 @@ test("new play requests queue behind the active track instead of replacing it", 
   ok(getGuildQueue("guild-3").length === 1, "queued items should be kept in order for later playback");
 
   guildPlayers.delete("guild-3");
-  skipGuildMusic("guild-3");
-});
-
-test("advance and clear queue manage the queued track list", async () => {
-  await enqueueGuildTrack("guild-4", { title: "First queued", url: "https://example.com/first.mp3" });
-  await enqueueGuildTrack("guild-4", { title: "Second queued", url: "https://example.com/second.mp3" });
-
-  const advanced = await advanceGuildQueue("guild-4");
-  ok(advanced.ok === true && advanced.nextTitle === "Second queued", "advance should promote the next queued track");
-
-  const cleared = await clearGuildQueue("guild-4");
-  ok(cleared.ok === true && cleared.cleared === 1, "clear should remove the remaining queued items");
+  await stopGuildMusic("guild-3");
 });

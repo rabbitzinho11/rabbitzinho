@@ -239,36 +239,6 @@ function getGuildQueue(guildId) {
   return Array.isArray(queue) ? queue.slice() : [];
 }
 
-async function advanceGuildQueue(guildId) {
-  const queue = getGuildQueue(guildId);
-  if (!queue.length) {
-    return { ok: false, status: "empty" };
-  }
-
-  const next = queue[1] || null;
-  guildQueues.set(guildId, next ? queue.slice(1) : []);
-  return {
-    ok: true,
-    status: "advanced",
-    nextTitle: next ? next.title : null,
-    queueLength: next ? getGuildQueue(guildId).length : 0,
-  };
-}
-
-async function clearGuildQueue(guildId) {
-  const queue = getGuildQueue(guildId);
-  if (!queue.length) {
-    return { ok: true, status: "empty", cleared: 0 };
-  }
-
-  guildQueues.delete(guildId);
-  return {
-    ok: true,
-    status: "cleared",
-    cleared: queue.length,
-  };
-}
-
 function enqueueGuildTrack(guildId, track) {
   if (!guildId || !track) {
     return { ok: false, status: "error", reason: "INVALID_TRACK" };
@@ -327,92 +297,6 @@ async function leaveGuildMusic(guildId) {
   return stopGuildMusic(guildId);
 }
 
-async function pauseGuildMusic(guildId) {
-  const session = guildPlayers.get(guildId);
-  if (!session || !session.player) {
-    return { ok: false, status: "idle" };
-  }
-
-  try {
-    session.player.pause();
-    session.player.state = { ...session.player.state, status: "paused" };
-    return { ok: true, status: "paused" };
-  } catch (err) {
-    return { ok: false, status: "error", reason: err?.message || "PAUSE_FAILED" };
-  }
-}
-
-async function resumeGuildMusic(guildId) {
-  const session = guildPlayers.get(guildId);
-  if (!session || !session.player) {
-    return { ok: false, status: "idle" };
-  }
-
-  try {
-    if (typeof session.player.unpause === "function") {
-      session.player.unpause();
-    }
-    session.player.state = { ...session.player.state, status: "playing" };
-    return { ok: true, status: "playing" };
-  } catch (err) {
-    return { ok: false, status: "error", reason: err?.message || "RESUME_FAILED" };
-  }
-}
-
-async function skipGuildMusic(guildId) {
-  const session = guildPlayers.get(guildId);
-  if (!session) {
-    const hasQueue = getGuildQueue(guildId).length > 0;
-    if (hasQueue) {
-      guildQueues.delete(guildId);
-      return { ok: true, status: "skipped" };
-    }
-    return { ok: false, status: "idle" };
-  }
-
-  try {
-    const queue = getGuildQueue(guildId);
-    if (queue.length > 0) {
-      const next = queue[0];
-      guildQueues.set(guildId, queue.slice(1));
-      const resource = await createResourceFromUrl(next.url).catch(() => null);
-      if (resource) {
-        session.player?.stop();
-        session.player?.play(resource);
-        session.lastTrack = { title: next.title, url: next.url };
-        return { ok: true, status: "skipped", title: next.title };
-      }
-    }
-
-    session.player?.stop();
-    return { ok: true, status: "skipped" };
-  } catch (err) {
-    return { ok: false, status: "error", reason: err?.message || "SKIP_FAILED" };
-  } finally {
-    try {
-      const queue = getGuildQueue(guildId);
-      if (!queue.length && session && session.connection) {
-        session.connection.destroy();
-        guildPlayers.delete(guildId);
-      }
-    } catch {}
-  }
-}
-
-function getGuildMusicState(guildId) {
-  const session = guildPlayers.get(guildId);
-  if (!session) {
-    return { ok: false, status: "stopped" };
-  }
-
-  return {
-    ok: true,
-    status: session.player?.state?.status || "playing",
-    title: session.lastTrack?.title || null,
-    channelId: session.channelId || null,
-  };
-}
-
 module.exports = {
   normalizeMediaQuery,
   isPlayableUrl,
@@ -420,15 +304,9 @@ module.exports = {
   playGuildMusic,
   stopGuildMusic,
   leaveGuildMusic,
-  pauseGuildMusic,
-  resumeGuildMusic,
-  skipGuildMusic,
   enqueueGuildTrack,
-  advanceGuildQueue,
-  clearGuildQueue,
   getGuildQueue,
   getNowPlaying,
-  getGuildMusicState,
   guildPlayers,
   guildQueues,
 };

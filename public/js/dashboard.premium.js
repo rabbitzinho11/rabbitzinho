@@ -518,9 +518,9 @@
       summary.replaceChildren();
       [
         [t("premium_admin_active"), activeCount, "is-active"],
+        [t("premium_admin_expiring_soon"), expiringSoonCount, "is-expiring"],
         [t("premium_admin_expired"), expiredCount, "is-expired"],
         [t("premium_admin_disabled"), disabledCount, "is-disabled"],
-        [t("premium_admin_expiring_soon"), expiringSoonCount, "is-expiring"],
       ].forEach(function (metric) {
         var item = document.createElement("div");
         item.className = "premium-admin-metric " + metric[2];
@@ -569,7 +569,18 @@
 
     items.forEach(function (item) {
       var row = document.createElement("article");
-      row.className = "list-item premium-guild-row";
+      var stateClass = item.active
+        ? "is-active"
+        : item.enabled
+          ? "is-expired"
+          : "is-disabled";
+      if (item.active === true && item.until) {
+        var until = new Date(item.until).getTime();
+        if (Number.isFinite(until) && until <= Date.now() + 30 * 24 * 60 * 60 * 1000) {
+          stateClass = "is-expiring";
+        }
+      }
+      row.className = "list-item premium-guild-row " + stateClass;
       var summary = document.createElement("div");
       summary.className = "premium-guild-row__summary";
       var title = document.createElement("strong");

@@ -40,14 +40,17 @@
     "node": "20.x"
   },
   "dependencies": {
+    "@discordjs/voice": "^0.19.2",
+    "cors": "^2.8.5",
     "discord.js": "^14.25.1",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
+    "ffmpeg-static": "^5.3.0",
+    "helmet": "^7.0.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^9.1.2",
+    "play-dl": "^1.9.7",
     "rss-parser": "^3.13.0",
-    "helmet": "^7.0.0",
-    "cors": "^2.8.5",
     "zod": "^3.23.8"
   },
   "devDependencies": {

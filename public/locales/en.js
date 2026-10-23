@@ -113,6 +113,7 @@ window.OzarkLocales.en = {
   config_server_language_en: "English",
   config_server_language_label: "Primary server language",
   config_server_language_pt: "Portuguese",
+  config_server_timezone_auto: "Automatic (use server default)",
   config_server_timezone_hint:
     "Use a valid IANA identifier (e.g., Europe/Lisbon, UTC). Affects only how dates are displayed in the dashboard.",
   config_server_timezone_label: "Server timezone",
@@ -975,12 +976,15 @@ window.OzarkLocales.en = {
     "Add at least one emoji and role pair.",
   features_diagnosis_issue_missing_streamer:
     "Enter a Twitch streamer username.",
+  features_diagnosis_issue_missing_stream_url: "Add a valid stream URL.",
   features_diagnosis_issue_missing_twitch_credentials:
     "Set TWITCH_CLIENT_ID and TWITCH_CLIENT_SECRET on the bot server.",
   features_diagnosis_issue_missing_stats_metric:
     "Enable at least one server statistics metric.",
   features_diagnosis_issue_missing_automod_rules:
     "Add at least one banned word or phrase before enabling AutoMod.",
+  features_diagnosis_issue_missing_configuration:
+    "Complete the required configuration before enabling this module.",
   features_diagnosis_issue_bot_member_unavailable:
     "The bot's server member could not be checked.",
   features_diagnosis_issue_permission_missing:
@@ -1089,6 +1093,15 @@ window.OzarkLocales.en = {
   features_automod_bypass_channels: "Exempt channels",
   features_automod_bypass_hint:
     "Messages from these roles or channels are not checked by AutoMod.",
+  features_automod_summary_title: "Operational summary",
+  features_automod_summary_words_pt: "PT",
+  features_automod_summary_words_en: "EN",
+  features_automod_summary_exemptions: "Exemptions",
+  features_automod_summary_rules: "Rules",
+  features_automod_summary_hint:
+    "There are {rules} active rules and {exemptions} exemptions to reduce false positives.",
+  features_automod_summary_balanced: "Low operational noise",
+  features_automod_summary_review: "Review recommended",
   features_automod_words_placeholder: "One word or phrase per line (up to 100)",
   features_automod_simulation_label: "Simulation message",
   features_automod_simulation_placeholder:
@@ -1146,8 +1159,29 @@ window.OzarkLocales.en = {
   feature_twitch_name: "Twitch stream alerts",
   feature_twitch_desc:
     "Posts an alert when this Twitch channel goes live. Checks every 30 seconds and can mention one selected role. Requires a Twitch application configured on the bot server.",
+  feature_radio_name: "Ambient radio / 24/7 stream",
+  feature_radio_desc:
+    "Keeps a voice channel live with a continuous radio or ambient stream and automatically reconnects if the source drops.",
+  features_radio_status: "Status",
+  features_radio_status_offline: "Offline",
+  features_radio_status_ready: "Ready",
+  features_radio_status_live: "Live",
+  features_radio_status_pending: "Voice channel pending",
+  features_radio_status_error: "Connection error",
+  features_radio_start: "Start",
+  features_radio_stop: "Stop",
+  features_radio_starting: "Starting stream…",
+  features_radio_stopping: "Stopping stream…",
+  features_radio_started: "Radio stream started.",
+  features_radio_stopped: "Radio stream stopped.",
+  features_radio_start_error: "Could not start the radio stream.",
+  features_radio_stop_error: "Could not stop the radio stream.",
+  features_radio_stream_url: "Stream URL",
+  features_radio_stream_type: "Stream type",
+  features_radio_reconnect_minutes: "Reconnect delay (minutes)",
   features_test_info_twitch_live:
     "Twitch connection verified; the channel is live.",
+  features_test_info_radio_ok: "Radio stream endpoint is reachable and valid.",
   features_test_info_twitch_offline:
     "Twitch connection verified; the channel is currently offline.",
   features_message: "Message",

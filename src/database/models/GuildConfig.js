@@ -232,6 +232,16 @@ const guildConfigSchema = new Schema(
         channelId: { type: String, default: null },
         roleId: { type: String, default: null },
       },
+
+      // Stream rádio / ambiente 24/7 em um canal de voz fixo.
+      radio: {
+        enabled: { type: Boolean, default: false },
+        voiceChannelId: { type: String, default: null },
+        streamUrl: { type: String, default: null },
+        streamType: { type: String, default: "mp3" },
+        reconnectMinutes: { type: Number, default: 15 },
+        statusMessage: { type: String, default: null },
+      },
     },
     featuresConfigured: {
       type: [String],

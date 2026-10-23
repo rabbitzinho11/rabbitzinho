@@ -5,12 +5,14 @@ const status = {
   mongoConnected: false,
   gameNewsRunning: false,
   giveawaysRunning: false,
+  radioRunning: false,
 
   startedAt: Date.now(),
   lastDiscordReadyAt: null,
   lastMongoConnectedAt: null,
   lastGameNewsStartedAt: null,
   lastGiveawaysStartedAt: null,
+  lastRadioStartedAt: null,
 
   // Métricas simples de utilização
   totalCommandsExecuted: 0,
@@ -29,6 +31,7 @@ function getStatus() {
     mongoConnected: status.mongoConnected,
     gameNewsRunning: status.gameNewsRunning,
     giveawaysRunning: status.giveawaysRunning,
+    radioRunning: status.radioRunning,
 
     uptimeSeconds: Math.floor((now - status.startedAt) / 1000),
 
@@ -37,6 +40,7 @@ function getStatus() {
     lastMongoConnectedAt: status.lastMongoConnectedAt,
     lastGameNewsStartedAt: status.lastGameNewsStartedAt,
     lastGiveawaysStartedAt: status.lastGiveawaysStartedAt,
+    lastRadioStartedAt: status.lastRadioStartedAt,
 
     // Contadores de utilização (consumidos por /health e pelo self-test)
     totalCommandsExecuted: status.totalCommandsExecuted,
@@ -82,12 +86,18 @@ function setGiveawaysRunning(value = true) {
   if (value) status.lastGiveawaysStartedAt = new Date().toISOString();
 }
 
+function setRadioRunning(value = true) {
+  status.radioRunning = Boolean(value);
+  if (value) status.lastRadioStartedAt = new Date().toISOString();
+}
+
 module.exports = {
   getStatus,
   setDiscordReady,
   setMongoConnected,
   setGameNewsRunning,
   setGiveawaysRunning,
+  setRadioRunning,
   incrementCommands,
   incrementInfractions,
   incrementAutoModActions,

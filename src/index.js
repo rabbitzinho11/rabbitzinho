@@ -44,6 +44,7 @@ const startGameNews = require("./systems/gamenews");
 const startGiveaways = require("./systems/giveaways");
 const { startMemes } = require("./systems/memes");
 const { startTwitch } = require("./systems/twitch");
+const { startRadio } = require("./systems/radio");
 const { startServerStats } = require("./systems/serverStats");
 const { startPresenceTracker } = require("./systems/presenceTracker");
 const { startVerificationSweep } = require("./systems/verification");
@@ -300,6 +301,19 @@ async function handleClientReady() {
       console.log("🔴 Twitch notifications started.");
     } catch (err) {
       console.error("[Startup] Failed to start Twitch notifications:", err);
+    }
+
+    try {
+      startRadio(client);
+      if (status && typeof status.setRadioRunning === "function") {
+        status.setRadioRunning(true);
+      }
+      console.log("📻 Radio stream manager started.");
+    } catch (err) {
+      console.error("[Startup] Failed to start Radio stream manager:", err);
+      if (status && typeof status.setRadioRunning === "function") {
+        status.setRadioRunning(false);
+      }
     }
 
     // Basic presence as a fallback; can be refined later

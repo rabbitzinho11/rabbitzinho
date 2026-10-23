@@ -26,6 +26,26 @@ function clampNumber(n, min, max) {
   return Math.max(min, Math.min(max, n));
 }
 
+function computeGameNewsPollInterval(config, feeds) {
+  const globalMs = Number(config?.gameNews?.interval ?? 30 * 60 * 1000);
+  const safeGlobalMs =
+    Number.isFinite(globalMs) && globalMs >= 10_000
+      ? globalMs
+      : 30 * 60 * 1000;
+
+  const feedIntervals = Array.isArray(feeds)
+    ? feeds
+        .map((feed) => Number(feed?.intervalMs ?? 0))
+        .filter((n) => Number.isFinite(n) && n > 0)
+    : [];
+
+  const minFeedInterval = feedIntervals.length
+    ? Math.min(...feedIntervals)
+    : safeGlobalMs;
+
+  return Math.min(safeGlobalMs, minFeedInterval);
+}
+
 function hasSendPerm(channel, client) {
   try {
     return channel
@@ -1172,7 +1192,11 @@ async function gameNewsSystem(client, config) {
     const scheduleNext = async () => {
       await runLoop().catch(() => null);
 
-      const nextInMs = withJitter(safeBaseInterval, safeGlobalJitter);
+      const feeds = await getEffectiveFeeds();
+      const nextInMs = withJitter(
+        computeGameNewsPollInterval(config, feeds),
+        safeGlobalJitter,
+      );
       setTimeout(scheduleNext, nextInMs).unref?.();
     };
 
@@ -1371,4 +1395,5 @@ module.exports._internals = {
   collectExtraChannelIds,
   dayKeyUTC,
   bumpDailyCount,
+  computeGameNewsPollInterval,
 };

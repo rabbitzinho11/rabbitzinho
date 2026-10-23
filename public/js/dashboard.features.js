@@ -712,17 +712,47 @@
         { type: "role", name: "roleId", label: "features_twitch_role" },
       ],
     },
+    {
+      key: "radio",
+      fields: [
+        { type: "channel", name: "voiceChannelId", label: "features_channel" },
+        {
+          type: "text",
+          name: "streamUrl",
+          label: "features_radio_stream_url",
+          placeholder: "https://example.com/radio.mp3",
+          maxLength: 2048,
+        },
+        {
+          type: "text",
+          name: "streamType",
+          label: "features_radio_stream_type",
+          placeholder: "mp3",
+          maxLength: 8,
+        },
+        {
+          type: "number",
+          name: "reconnectMinutes",
+          label: "features_radio_reconnect_minutes",
+          min: 1,
+          max: 1440,
+          step: 1,
+        },
+      ],
+    },
   ];
 
   var current = {}; // Valores carregados da API (por funcionalidade).
   var configuredFeatures = {};
   var activeFeatureFilter = "all";
+  var radioStatusTimer = null;
   var featureTestActionKeys = {
     autoModeration: "features_test_simulate",
     antiSpam: "features_test_validate",
     autoKick: "features_test_validate",
     polls: "features_test_how_to",
     twitch: "features_test_check",
+    radio: "features_test_check",
   };
   var featureTestConfirmationKeys = {
     messageLogs: "features_test_send_confirm",
@@ -751,7 +781,7 @@
     messageLogs: ["channelId"],
     reactionRoles: ["channelId", "messageId", "entries"],
     autoKick: ["infractionsToKick"],
-    levels: ["xpMin", "xpMax", "cooldownSeconds"],
+    levels: ["announceChannelId", "xpMin", "xpMax", "cooldownSeconds"],
     starboard: ["channelId", "threshold"],
     verification: ["roleId", "channelId"],
     tickets: ["channelId", "openEmoji", "closeEmoji"],
@@ -760,6 +790,7 @@
     serverStats: ["serverStats"],
     memes: ["channelId", "intervalMinutes"],
     twitch: ["streamerName", "channelId"],
+    radio: ["voiceChannelId", "streamUrl"],
   };
   var channels = null; // Cache de canais do guild.
   var roles = null; // Cache de cargos do guild.
@@ -1143,6 +1174,9 @@
     missing_automod_rules: function (params) {
       return t("features_diagnosis_issue_missing_automod_rules", params);
     },
+    missing_configuration: function (params) {
+      return t("features_diagnosis_issue_missing_configuration", params);
+    },
     bot_member_unavailable: function (params) {
       return t("features_diagnosis_issue_bot_member_unavailable", params);
     },
@@ -1209,6 +1243,86 @@
     var renderIssue =
       diagnosisIssues[issue.code] || diagnosisIssues.request_failed;
     return renderIssue(params);
+  }
+
+  function countListEntries(value) {
+    if (value == null) return 0;
+    if (Array.isArray(value)) {
+      return value.filter(function (item) {
+        return item != null && String(item).trim() !== "";
+      }).length;
+    }
+    return String(value)
+      .split(/\r?\n/)
+      .map(function (item) {
+        return String(item).trim();
+      })
+      .filter(function (item) {
+        return item.length > 0;
+      }).length;
+  }
+
+  function autoModerationSummaryHtml(value) {
+    var ptCount = countListEntries(value && value.bannedWordsPt);
+    var enCount = countListEntries(value && value.bannedWordsEn);
+    var exemptRoles = countListEntries(value && value.bypassRoleIds);
+    var exemptChannels = countListEntries(value && value.bypassChannelIds);
+    var totalRules = ptCount + enCount;
+    var totalExemptions = exemptRoles + exemptChannels;
+    var totalText = String(totalRules);
+    var exemptionText = String(totalExemptions);
+    var hintKey =
+      totalRules > 0 && totalExemptions > 0
+        ? "features_automod_summary_balanced"
+        : "features_automod_summary_review";
+
+    return (
+      '' +
+      '<div class="feature-automod-summary">' +
+      '<div class="feature-card__section-label">' +
+      esc(t("features_automod_summary_title")) +
+      "</div>" +
+      '<div class="feature-automod-summary__grid">' +
+      '<div class="feature-automod-summary__metric">' +
+      '<span>' +
+      esc(t("features_automod_summary_words_pt")) +
+      "</span><strong>" +
+      esc(ptCount) +
+      "</strong></div>" +
+      '<div class="feature-automod-summary__metric">' +
+      '<span>' +
+      esc(t("features_automod_summary_words_en")) +
+      "</span><strong>" +
+      esc(enCount) +
+      "</strong></div>" +
+      '<div class="feature-automod-summary__metric">' +
+      '<span>' +
+      esc(t("features_automod_summary_exemptions")) +
+      "</span><strong>" +
+      esc(exemptionText) +
+      "</strong></div>" +
+      '<div class="feature-automod-summary__metric is-highlight">' +
+      '<span>' +
+      esc(t("features_automod_summary_rules")) +
+      "</span><strong>" +
+      esc(totalText) +
+      "</strong></div>" +
+      "</div>" +
+      '<p class="feature-automod-summary__hint">' +
+      esc(
+        t("features_automod_summary_hint", {
+          rules: totalText,
+          exemptions: exemptionText,
+        }),
+      ) +
+      "</p>" +
+      '<div class="feature-automod-summary__state ' +
+      (hintKey === "features_automod_summary_balanced" ? "is-good" : "is-review") +
+      '">' +
+      esc(t(hintKey)) +
+      "</div>" +
+      "</div>"
+    );
   }
 
   function renderDiagnosis(card, diagnosis) {
@@ -1370,6 +1484,14 @@
           esc(publishLabel) +
           "</button>"
         : "";
+    var radioControlsHtml =
+      feature.key === "radio"
+        ? '<button class="btn xs btn-ghost" type="button" data-role="radio-start">' +
+          esc(t("features_radio_start")) +
+          '</button><button class="btn xs btn-ghost" type="button" data-role="radio-stop">' +
+          esc(t("features_radio_stop")) +
+          "</button>"
+        : "";
 
     // Chaves construídas fora do t(...) para o audit i18n não as interpretar como literais.
     var nameKey = "feature_" + snake(feature.key) + "_name";
@@ -1412,12 +1534,27 @@
         ),
       ) +
       "</span>";
+    var radioStatusHtml =
+      feature.key === "radio"
+        ? '<div class="feature-card__status" data-role="radio-status-wrap">' +
+          '<span class="hint">' +
+          esc(t("features_radio_status")) +
+          "</span> " +
+          '<strong data-role="radio-status" data-state="offline">' +
+          esc(t("features_radio_status_offline")) +
+          "</strong>" +
+          "</div>"
+        : "";
     var setupHintHtml =
       isConfigured || isInherited
         ? ""
         : '<p class="hint" data-role="setup-hint">' +
           esc(t("features_setup_hint")) +
           "</p>";
+    var autoModerationSummary =
+      feature.key === "autoModeration"
+        ? autoModerationSummaryHtml(v)
+        : "";
 
     // Pré-visualização (boas-vindas/saída): espelha o embed enviado ao Discord.
     var previewHtml = feature.preview
@@ -1472,6 +1609,7 @@
       esc(t(descKey)) +
       "</p>" +
       configStateHtml +
+      radioStatusHtml +
       '<div class="feature-diagnosis" data-role="diagnosis" data-status="unknown">' +
       '<div class="feature-diagnosis__header">' +
       '<span class="feature-diagnosis__status" data-role="diagnosis-status" role="status" aria-live="polite">' +
@@ -1487,6 +1625,7 @@
       esc(feature.key) +
       '">' +
       setupHintHtml +
+      autoModerationSummary +
       presetsHtml +
       (fields ? '<div class="feature-card__fields">' + fields + "</div>" : "") +
       advancedFieldsHtml +
@@ -1499,6 +1638,7 @@
       '<button class="btn xs" type="button" data-role="test">' +
       esc(t(featureTestActionKeys[feature.key] || "features_test_send")) +
       "</button>" +
+      (radioControlsHtml ? radioControlsHtml : "") +
       '<span class="hint" data-role="status"></span>' +
       "</div>" +
       '<div class="feature-card__actions-right">' +
@@ -1537,6 +1677,65 @@
     var diagnosis = card.querySelector('[data-role="diagnosis"]');
     var status = diagnosis ? diagnosis.dataset.status : "unknown";
     return ["incomplete", "blocked", "error"].includes(status);
+  }
+
+  async function syncRadioStatus() {
+    var gid = guildId();
+    if (!gid) return;
+    var card = cardFor("radio");
+    if (!card) return;
+    var statusEl = card.querySelector('[data-role="radio-status"]');
+    if (!statusEl) return;
+
+    try {
+      var res = await NS.apiGet(
+        "/api/radio?guildId=" + encodeURIComponent(gid),
+      );
+      var value = res && res.value ? res.value : {};
+      var state = String(value.status || "offline");
+      var label =
+        state === "playing"
+          ? t("features_radio_status_live")
+          : state === "ready"
+            ? t("features_radio_status_ready")
+            : state === "voice channel pending"
+              ? t("features_radio_status_pending")
+              : state === "error"
+                ? t("features_radio_status_error")
+                : t("features_radio_status_offline");
+      statusEl.textContent = label;
+      statusEl.setAttribute("data-state", state);
+      if (value.statusMessage) {
+        statusEl.title = String(value.statusMessage);
+      } else {
+        statusEl.title = "";
+      }
+    } catch (err) {
+      statusEl.textContent = t("features_radio_status_offline");
+      statusEl.setAttribute("data-state", "offline");
+      statusEl.title = "";
+    }
+  }
+
+  function startRadioStatusPolling() {
+    if (radioStatusTimer) {
+      clearInterval(radioStatusTimer);
+      radioStatusTimer = null;
+    }
+    if (!guildId()) return;
+    radioStatusTimer = setInterval(function () {
+      syncRadioStatus().catch(function (err) {
+        console.warn("Radio status refresh failed", err);
+      });
+    }, 15000);
+    radioStatusTimer.unref && radioStatusTimer.unref();
+  }
+
+  function stopRadioStatusPolling() {
+    if (radioStatusTimer) {
+      clearInterval(radioStatusTimer);
+      radioStatusTimer = null;
+    }
   }
 
   function updateFeatureOverview() {
@@ -1785,8 +1984,12 @@
       });
     var testBtn = card.querySelector('[data-role="test"]');
     var publishBtn = card.querySelector('[data-role="publish"]');
+    var radioStartBtn = card.querySelector('[data-role="radio-start"]');
+    var radioStopBtn = card.querySelector('[data-role="radio-stop"]');
     if (testBtn) testBtn.disabled = !on || premiumLocked || saving;
     if (publishBtn) publishBtn.disabled = !on || premiumLocked || saving;
+    if (radioStartBtn) radioStartBtn.disabled = !on || premiumLocked || saving;
+    if (radioStopBtn) radioStopBtn.disabled = !on || premiumLocked || saving;
     if (enabledEl)
       enabledEl.disabled =
         premiumLocked || saving || configuredFeatures[key] !== true;
@@ -1803,6 +2006,8 @@
     var enabledEl = card.querySelector('[data-role="enabled"]');
     var saveBtn = card.querySelector('[data-role="save"]');
     var testBtn = card.querySelector('[data-role="test"]');
+    var radioStartBtn = card.querySelector('[data-role="radio-start"]');
+    var radioStopBtn = card.querySelector('[data-role="radio-stop"]');
     var diagnoseBtn = card.querySelector('[data-role="diagnose"]');
     var publishBtn = card.querySelector('[data-role="publish"]');
     var addEntryBtn = card.querySelector('[data-role="add-entry"]');
@@ -1838,6 +2043,18 @@
     if (testBtn) {
       testBtn.addEventListener("click", function () {
         testFeature(key);
+      });
+    }
+
+    if (radioStartBtn) {
+      radioStartBtn.addEventListener("click", function () {
+        toggleRadioRuntime("start");
+      });
+    }
+
+    if (radioStopBtn) {
+      radioStopBtn.addEventListener("click", function () {
+        toggleRadioRuntime("stop");
       });
     }
 
@@ -2108,6 +2325,11 @@
       card.setAttribute("data-dirty", "false");
       updateConfigState(card);
       resetDiagnosis(card);
+      if (key === "radio") {
+        syncRadioStatus().catch(function (err) {
+          console.warn("Radio status refresh failed after save", err);
+        });
+      }
       if (!silent) {
         if (statusEl) statusEl.textContent = "";
         notify(t("features_saved"), { type: "success" });
@@ -2139,6 +2361,55 @@
   }
 
   // Guarda a configuração atual e envia uma amostra da funcionalidade.
+  async function toggleRadioRuntime(action) {
+    var gid = guildId();
+    if (!gid) return;
+
+    var card = cardFor("radio");
+    var enabledEl = card ? card.querySelector('[data-role="enabled"]') : null;
+    var statusEl = card ? card.querySelector('[data-role="status"]') : null;
+    var startButton = card ? card.querySelector('[data-role="radio-start"]') : null;
+    var stopButton = card ? card.querySelector('[data-role="radio-stop"]') : null;
+    if (enabledEl) enabledEl.checked = action === "start";
+    if (startButton) startButton.disabled = true;
+    if (stopButton) stopButton.disabled = true;
+
+    try {
+      var value = collect("radio");
+      value.enabled = action === "start";
+      current.radio = value;
+      if (card) card.setAttribute("data-dirty", "false");
+      var saved = await saveFeature("radio", true);
+      if (!saved) throw new Error("SAVE_FAILED");
+
+      var res = await NS.apiPost("/api/radio/" + action, { guildId: gid });
+      if (!res || res.ok === false) {
+        throw new Error((res && res.error) || "ERROR");
+      }
+
+      if (statusEl) {
+        statusEl.textContent =
+          action === "start" ? t("features_radio_starting") : t("features_radio_stopping");
+      }
+      await syncRadioStatus();
+      notify(
+        action === "start" ? t("features_radio_started") : t("features_radio_stopped"),
+        { type: "success" },
+      );
+    } catch (err) {
+      console.error("Radio runtime toggle failed", err);
+      if (enabledEl) enabledEl.checked = !!(current.radio && current.radio.enabled);
+      notify(
+        action === "start" ? t("features_radio_start_error") : t("features_radio_stop_error"),
+        { type: "error" },
+      );
+    } finally {
+      if (startButton) startButton.disabled = false;
+      if (stopButton) stopButton.disabled = false;
+      applyDisabled(card);
+    }
+  }
+
   async function testFeature(key) {
     var gid = guildId();
     if (!gid) return;
@@ -2182,6 +2453,11 @@
         ? "features_test_info_" + res.info
         : "features_test_ok";
       if (statusEl) statusEl.textContent = t(infoKey, res.data || {});
+      if (key === "radio") {
+        syncRadioStatus().catch(function (err) {
+          console.warn("Radio status refresh failed after test", err);
+        });
+      }
       notify(t(infoKey, res.data || {}), { type: "success" });
     } catch (err) {
       console.error("Feature test error", err);
@@ -2294,6 +2570,10 @@
           current[feature.key] = { enabled: false };
       });
       render();
+      startRadioStatusPolling();
+      syncRadioStatus().catch(function (err) {
+        console.warn("Radio status load failed", err);
+      });
       FEATURES.forEach(function (feature) {
         if (
           configuredFeatures[feature.key] === true &&
@@ -2311,9 +2591,16 @@
     }
   }
 
+  if (typeof window !== "undefined") {
+    window.addEventListener("beforeunload", function () {
+      stopRadioStatusPolling();
+    });
+  }
+
   NS.loadFeatures = loadFeatures;
   NS.applyPremiumState = applyPremiumState;
   NS.toggleFeatureCard = toggleCardDetails;
+  NS.stopRadioStatusPolling = stopRadioStatusPolling;
   NS.hasUnsavedFeatureDrafts = function () {
     var grid = byId("featuresGrid");
     return !!(grid && grid.querySelector('.feature-card[data-dirty="true"]'));

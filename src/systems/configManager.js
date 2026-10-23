@@ -63,6 +63,39 @@ function cloneJsonSafe(v) {
   }
 }
 
+const ANTI_SPAM_ALIAS_PATHS = new Map([
+  ["antiSpam.intervalSeconds", "antiSpam.interval"],
+  ["antiSpam.muteDurationMinutes", "antiSpam.muteDuration"],
+  ["antiSpam.actionCooldownSeconds", "antiSpam.actionCooldown"],
+  ["antiSpam.softActionsEnabled", "antiSpam.softActions.enabled"],
+  ["antiSpam.strikeWindowSeconds", "antiSpam.softActions.strikeWindowMs"],
+  ["antiSpam.strikesToMute", "antiSpam.softActions.strikesToMute"],
+]);
+
+function normalizeConfigPath(pathStr) {
+  const raw = typeof pathStr === "string" ? pathStr.trim() : "";
+  if (!raw) return "";
+  return ANTI_SPAM_ALIAS_PATHS.get(raw) || raw;
+}
+
+function normalizeConfigValue(pathStr, value) {
+  const raw = typeof pathStr === "string" ? pathStr.trim() : "";
+  if (!raw) return value;
+
+  switch (raw) {
+    case "antiSpam.intervalSeconds":
+      return typeof value === "number" ? value * 1000 : value;
+    case "antiSpam.muteDurationMinutes":
+      return typeof value === "number" ? value * 60 * 1000 : value;
+    case "antiSpam.actionCooldownSeconds":
+      return typeof value === "number" ? value * 1000 : value;
+    case "antiSpam.strikeWindowSeconds":
+      return typeof value === "number" ? value * 1000 : value;
+    default:
+      return value;
+  }
+}
+
 // ✅ Only allow safe runtime edits here.
 // DO NOT include role IDs, channel IDs, feeds, staffRoles, guildId, TOKEN, etc.
 const ALLOWED_PATHS = new Set([
@@ -82,6 +115,16 @@ const ALLOWED_PATHS = new Set([
   "antiSpam.minLength",
   "antiSpam.ignoreAttachments",
   "antiSpam.similarityThreshold",
+  "antiSpam.softActions.enabled",
+  "antiSpam.softActions.strikeWindowMs",
+  "antiSpam.softActions.strikesToMute",
+
+  "antiSpam.intervalSeconds",
+  "antiSpam.muteDurationMinutes",
+  "antiSpam.actionCooldownSeconds",
+  "antiSpam.softActionsEnabled",
+  "antiSpam.strikeWindowSeconds",
+  "antiSpam.strikesToMute",
 
   "dashboard.maxLogs",
   "dashboard.maxDbLogs",
@@ -118,17 +161,18 @@ const ALLOWED_PATHS = new Set([
 function validateValue(pathStr, value) {
   // Stronger validation (still permissive enough to avoid regressions).
   // Goal: prevent obviously invalid configs (negative durations, NaN, extreme values).
+  const canonicalPath = normalizeConfigPath(pathStr);
 
   const isFiniteNumber = (n) => typeof n === "number" && Number.isFinite(n);
   const isInt = (n) => isFiniteNumber(n) && Number.isInteger(n);
   const inRange = (n, min, max) => isFiniteNumber(n) && n >= min && n <= max;
   const inRangeInt = (n, min, max) => isInt(n) && n >= min && n <= max;
 
-  if (pathStr === "language") {
+  if (canonicalPath === "language") {
     return value === "pt" || value === "en";
   }
 
-  if (pathStr === "globalMaintenance.message") {
+  if (canonicalPath === "globalMaintenance.message") {
     return typeof value === "string" && value.trim().length <= 180;
   }
 
@@ -152,10 +196,10 @@ function validateValue(pathStr, value) {
     "slash.enabled",
     "slash.registerOnStartup",
   ]);
-  if (boolPaths.has(pathStr)) return typeof value === "boolean";
+  if (boolPaths.has(canonicalPath)) return typeof value === "boolean";
 
   // Per-path numeric constraints
-  switch (pathStr) {
+  switch (canonicalPath) {
     case "maxWarnings":
       return inRangeInt(value, 0, 50);
     case "muteDuration":
@@ -217,6 +261,7 @@ function validateValue(pathStr, value) {
 
     // GameNews
     case "gameNews.interval":
+      return inRangeInt(value, 10_000, 7 * 24 * 60 * 60 * 1000);
     case "gameNews.maxPerCycle":
       return inRangeInt(value, 1, 10);
 
@@ -350,34 +395,36 @@ function applyPatch(payload) {
   }
 
   for (const p of patchList) {
-    const pathStr = p.path;
-    const value = p.value;
+    const rawPath = p.path;
+    let value = p.value;
+    const pathStr = normalizeConfigPath(rawPath);
 
-    if (!ALLOWED_PATHS.has(pathStr)) {
-      rejected.push({ path: pathStr });
+    if (!ALLOWED_PATHS.has(rawPath) && !ALLOWED_PATHS.has(pathStr)) {
+      rejected.push({ path: rawPath });
       continue;
     }
 
     // Support null as "clear override" for explicitly nullable paths
     if (value === null) {
       if (!NULLABLE_PATHS.has(pathStr)) {
-        rejected.push({ path: pathStr });
+        rejected.push({ path: rawPath });
         continue;
       }
       deepDelete(overrides, pathStr);
       deepDelete(config, pathStr);
-      applied.push(pathStr);
+      applied.push(rawPath);
       continue;
     }
 
+    value = normalizeConfigValue(rawPath, value);
     if (!validateValue(pathStr, value)) {
-      rejected.push({ path: pathStr });
+      rejected.push({ path: rawPath });
       continue;
     }
 
     deepSet(overrides, pathStr, value);
     deepSet(config, pathStr, value);
-    applied.push(pathStr);
+    applied.push(rawPath);
   }
 
   try {
@@ -395,8 +442,11 @@ function applyPatch(payload) {
 }
 
 function getValue(pathStr) {
-  if (!ALLOWED_PATHS.has(pathStr)) return undefined;
-  return deepGet(config, pathStr);
+  const canonicalPath = normalizeConfigPath(pathStr);
+  if (!ALLOWED_PATHS.has(pathStr) && !ALLOWED_PATHS.has(canonicalPath)) {
+    return undefined;
+  }
+  return deepGet(config, canonicalPath || pathStr);
 }
 
 module.exports = {

@@ -49,6 +49,10 @@
         <p class="login-subtitle" data-i18n="login_subtitle">
           Use your Discord account to manage your servers.
         </p>
+        <div class="login-meta" aria-label="Dashboard access details">
+          <span class="login-chip login-chip--primary">Discord OAuth</span>
+          <span class="login-chip">Owner/Admin</span>
+        </div>
         <div class="login-actions">
           <button
             type="button"
@@ -66,6 +70,20 @@
           >
             Add bot
           </button>
+        </div>
+        <div class="login-benefits" aria-label="Dashboard benefits">
+          <div class="login-benefit">
+            <span class="login-benefit__label">Gestão</span>
+            <strong>Servidor</strong>
+          </div>
+          <div class="login-benefit">
+            <span class="login-benefit__label">Moderação</span>
+            <strong>Automação</strong>
+          </div>
+          <div class="login-benefit">
+            <span class="login-benefit__label">Premium</span>
+            <strong>Extras</strong>
+          </div>
         </div>
         <p class="login-access-hint" data-i18n="login_access_hint">
           Discord handles authentication. Server access requires administrator
@@ -905,15 +923,20 @@
             </div>
           </div>
 
-          <div class="card hidden" id="overviewGlobalShortcuts">
-            <h3 data-i18n="overview_global_actions_title">Gestão global</h3>
+          <div class="card hidden overview-global-shortcuts" id="overviewGlobalShortcuts">
+            <div class="overview-global-shortcuts__header">
+              <div>
+                <span class="overview-global-shortcuts__eyebrow">Administração</span>
+                <h3 data-i18n="overview_global_actions_title">Gestão global</h3>
+              </div>
+            </div>
             <p class="hint" data-i18n="overview_global_actions_hint">
               Configurações da plataforma e administração Premium.
             </p>
             <div class="feature-card__actions">
               <div class="feature-card__actions-left">
                 <button
-                  class="btn xs"
+                  class="btn xs primary"
                   type="button"
                   data-goto="premium-admin"
                   data-i18n="overview_open_global_management"
@@ -1043,19 +1066,26 @@
               id="moderationUnbanPanel"
               aria-labelledby="moderationUnbanTitle"
             >
-              <div class="moderation-unban__intro">
-                <h3
-                  id="moderationUnbanTitle"
-                  data-i18n="moderation_unban_title"
-                >
-                  Desbanir por ID
-                </h3>
+              <div class="moderation-unban__header">
+                <div class="moderation-unban__intro">
+                  <span class="moderation-unban__badge">Ação rápida</span>
+                  <h3
+                    id="moderationUnbanTitle"
+                    data-i18n="moderation_unban_title"
+                  >
+                    Desbanir por ID
+                  </h3>
+                </div>
                 <p class="hint" data-i18n="moderation_unban_hint">
                   Remove um ban usando o ID Discord do utilizador.
                 </p>
+                <div class="moderation-unban__meta">
+                  <span class="moderation-unban__meta-item">Formato: 17–20 dígitos</span>
+                  <span class="moderation-unban__meta-item">Razão opcional</span>
+                </div>
               </div>
-              <form id="moderationUnbanForm" class="row gap">
-                <label class="col" for="moderationUnbanUserId">
+              <form id="moderationUnbanForm" class="moderation-unban__form">
+                <label class="field" for="moderationUnbanUserId">
                   <span data-i18n="moderation_unban_user_id"
                     >ID do utilizador</span
                   >
@@ -1071,7 +1101,7 @@
                     required
                   />
                 </label>
-                <label class="col" for="moderationUnbanReason">
+                <label class="field" for="moderationUnbanReason">
                   <span data-i18n="users_actions_reason_placeholder"
                     >Motivo (opcional)</span
                   >
@@ -1591,6 +1621,24 @@
               </p>
             </div>
             <div class="premium-panel__history">
+              <div class="premium-admin-summary" aria-label="Resumo de licenças premium">
+                <div class="premium-admin-summary__item is-active">
+                  <span>Ativas</span>
+                  <strong>0</strong>
+                </div>
+                <div class="premium-admin-summary__item is-expiring">
+                  <span>Próximas</span>
+                  <strong>0</strong>
+                </div>
+                <div class="premium-admin-summary__item is-expired">
+                  <span>Expiradas</span>
+                  <strong>0</strong>
+                </div>
+                <div class="premium-admin-summary__item is-disabled">
+                  <span>Desativadas</span>
+                  <strong>0</strong>
+                </div>
+              </div>
               <form
                 class="premium-settings-form hidden"
                 id="premiumSettingsForm"
@@ -3221,6 +3269,29 @@
               servidor.
             </p>
 
+            <div class="config-overview" aria-label="Resumo operacional do servidor">
+              <div class="config-overview__item is-staff" id="configOverviewStaffItem">
+                <span>Staff</span>
+                <strong id="configOverviewStaffCount">0</strong>
+              </div>
+              <div class="config-overview__item is-channels" id="configOverviewChannelsItem">
+                <span>Logs</span>
+                <strong id="configOverviewChannelsCount">0</strong>
+              </div>
+              <div class="config-overview__item is-labels" id="configOverviewLabelsItem">
+                <span>Etiquetas</span>
+                <strong id="configOverviewLabelsCount">0</strong>
+              </div>
+              <div class="config-overview__item is-language" id="configOverviewLanguageItem">
+                <span>Idioma</span>
+                <strong id="configOverviewLanguageValue">Auto</strong>
+              </div>
+              <div class="config-overview__item is-timezone" id="configOverviewTimezoneItem">
+                <span>Timezone</span>
+                <strong id="configOverviewTimezoneValue">Auto</strong>
+              </div>
+            </div>
+
             <div
               class="config-nav"
               data-i18n-aria-label="config_nav_aria_label"
@@ -3437,16 +3508,32 @@
                   >
                     Etiquetas padrão para Tickets
                   </label>
-                  <input
-                    id="configTicketLabels"
-                    class="input"
-                    type="text"
-                    data-i18n-placeholder="config_ticket_labels_placeholder"
-                    placeholder="billing, bug, account"
-                  />
+                  <div class="label-manager">
+                    <div class="label-manager__row">
+                      <input
+                        id="configTicketLabels"
+                        class="input"
+                        type="text"
+                        data-i18n-placeholder="config_ticket_labels_placeholder"
+                        placeholder="billing, bug, account"
+                      />
+                      <button
+                        type="button"
+                        class="btn xs"
+                        id="configTicketLabelsAddBtn"
+                      >
+                        Adicionar
+                      </button>
+                    </div>
+                    <div
+                      class="label-manager__chips"
+                      id="configTicketLabelsChips"
+                      aria-live="polite"
+                    ></div>
+                  </div>
                   <p class="hint" data-i18n="config_ticket_labels_hint">
                     Etiquetas sugeridas para o ticketing do servidor. Usa
-                    vírgulas.
+                    vírgulas ou remove-as diretamente abaixo.
                   </p>
                 </div>
                 <section

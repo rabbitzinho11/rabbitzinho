@@ -112,6 +112,14 @@ const FEATURE_DEFAULTS = {
     channelId: null,
     roleId: null,
   },
+  radio: {
+    enabled: false,
+    voiceChannelId: null,
+    streamUrl: null,
+    streamType: "mp3",
+    reconnectMinutes: 15,
+    statusMessage: null,
+  },
 };
 
 const DYNAMIC_TEXT_DEFAULTS = {

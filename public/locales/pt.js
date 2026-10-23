@@ -116,6 +116,7 @@ window.OzarkLocales.pt = {
   config_server_language_en: "Inglês",
   config_server_language_label: "Idioma principal do servidor",
   config_server_language_pt: "Português",
+  config_server_timezone_auto: "Automático (usar padrão do servidor)",
   config_server_timezone_hint:
     "Usa um identificador IANA válido (ex.: Europe/Lisbon, UTC). Afeta apenas a apresentação de datas na dashboard.",
   config_server_timezone_label: "Timezone do servidor",
@@ -1002,12 +1003,15 @@ window.OzarkLocales.pt = {
     "Adiciona pelo menos um par de emoji e cargo.",
   features_diagnosis_issue_missing_streamer:
     "Indica o nome de utilizador do streamer Twitch.",
+  features_diagnosis_issue_missing_stream_url: "Adiciona uma URL válida para o stream.",
   features_diagnosis_issue_missing_twitch_credentials:
     "Define TWITCH_CLIENT_ID e TWITCH_CLIENT_SECRET no servidor do bot.",
   features_diagnosis_issue_missing_stats_metric:
     "Ativa pelo menos uma métrica de estatísticas do servidor.",
   features_diagnosis_issue_missing_automod_rules:
     "Adiciona pelo menos uma palavra ou expressão antes de ativar o AutoMod.",
+  features_diagnosis_issue_missing_configuration:
+    "Completa a configuração obrigatória antes de ativar este módulo.",
   features_diagnosis_issue_bot_member_unavailable:
     "Não foi possível verificar a presença do bot no servidor.",
   features_diagnosis_issue_permission_missing:
@@ -1117,6 +1121,15 @@ window.OzarkLocales.pt = {
   features_automod_bypass_channels: "Canais isentos",
   features_automod_bypass_hint:
     "As mensagens destes cargos ou canais não são verificadas pela moderação automática.",
+  features_automod_summary_title: "Resumo operativo",
+  features_automod_summary_words_pt: "PT",
+  features_automod_summary_words_en: "EN",
+  features_automod_summary_exemptions: "Exceções",
+  features_automod_summary_rules: "Regras",
+  features_automod_summary_hint:
+    "Há {rules} regras ativas e {exemptions} exceções para reduzir falsos positivos.",
+  features_automod_summary_balanced: "Sem ruído operacional",
+  features_automod_summary_review: "Revisão recomendada",
   features_automod_words_placeholder:
     "Uma palavra ou expressão por linha (máx. 100)",
   features_automod_simulation_label: "Mensagem de simulação",
@@ -1178,8 +1191,29 @@ window.OzarkLocales.pt = {
   feature_twitch_name: "Alertas de transmissões da Twitch",
   feature_twitch_desc:
     "Publica um alerta quando este canal da Twitch inicia uma transmissão. Verifica o estado a cada 30 segundos e pode mencionar um cargo. Requer uma aplicação Twitch configurada no servidor do bot.",
+  feature_radio_name: "Rádio ambiente / stream 24/7",
+  feature_radio_desc:
+    "Mantém um canal de voz em direto com uma rádio ou stream ambiente contínuo e reconecta automaticamente se a fonte cair.",
+  features_radio_status: "Estado",
+  features_radio_status_offline: "Offline",
+  features_radio_status_ready: "Pronto",
+  features_radio_status_live: "Em direto",
+  features_radio_status_pending: "Canal de voz pendente",
+  features_radio_status_error: "Erro de ligação",
+  features_radio_start: "Iniciar",
+  features_radio_stop: "Parar",
+  features_radio_starting: "A iniciar stream…",
+  features_radio_stopping: "A parar stream…",
+  features_radio_started: "Stream do rádio iniciada.",
+  features_radio_stopped: "Stream do rádio parada.",
+  features_radio_start_error: "Não foi possível iniciar o stream do rádio.",
+  features_radio_stop_error: "Não foi possível parar o stream do rádio.",
+  features_radio_stream_url: "URL do stream",
+  features_radio_stream_type: "Tipo do stream",
+  features_radio_reconnect_minutes: "Tempo de reconexão (minutos)",
   features_test_info_twitch_live:
     "Ligação à Twitch verificada; o canal está em direto.",
+  features_test_info_radio_ok: "O endpoint do rádio está acessível e válido.",
   features_test_info_twitch_offline:
     "Ligação à Twitch verificada; o canal está offline neste momento.",
   features_message: "Mensagem",

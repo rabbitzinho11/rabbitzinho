@@ -1,1 +1,15 @@
-{}
+{
+  "gameNews": {
+    "interval": 60000
+  },
+  "antiSpam": {
+    "interval": 20000,
+    "muteDuration": 480000,
+    "actionCooldown": 30000,
+    "softActions": {
+      "enabled": false,
+      "strikeWindowMs": 90000,
+      "strikesToMute": 3
+    }
+  }
+}

@@ -51,6 +51,7 @@ function loadDashboardModels() {
       "../database/models/PremiumSettings",
       "PremiumSettings",
     ),
+    RadioStream: loadModel("../database/models/RadioStream", "RadioStream"),
   };
 }
 

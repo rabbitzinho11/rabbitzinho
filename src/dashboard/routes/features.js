@@ -33,15 +33,18 @@ function hasLegacyFeatureConfig(name, value) {
 
 const REQUIRED_FEATURE_FIELDS = {
   antiSpam: [],
+  autoKick: ["infractionsToKick"],
   messageLogs: ["channelId"],
   reactionRoles: ["channelId", "messageId", "entries"],
+  levels: ["announceChannelId"],
   starboard: ["channelId"],
   verification: ["channelId", "roleId"],
   tickets: ["channelId"],
   welcome: ["channelId"],
   goodbye: ["channelId"],
-  memes: ["channelId"],
+  memes: ["channelId", "intervalMinutes"],
   twitch: ["streamerName", "channelId"],
+  radio: ["voiceChannelId", "streamUrl"],
 };
 const FEATURE_FIELD_ISSUES = {
   channelId: "missing_channel",
@@ -50,6 +53,10 @@ const FEATURE_FIELD_ISSUES = {
   messageId: "missing_message",
   entries: "missing_entries",
   streamerName: "missing_streamer",
+  intervalMinutes: "missing_configuration",
+  infractionsToKick: "missing_configuration",
+  voiceChannelId: "missing_channel",
+  streamUrl: "missing_stream_url",
 };
 const FEATURE_CHANNEL_FIELDS = {
   messageLogs: "channelId",
@@ -62,6 +69,7 @@ const FEATURE_CHANNEL_FIELDS = {
   goodbye: "channelId",
   memes: "channelId",
   twitch: "channelId",
+  radio: "voiceChannelId",
 };
 const CHANNEL_PERMISSIONS = {
   messageLogs: ["ViewChannel", "SendMessages", "EmbedLinks"],
@@ -563,6 +571,34 @@ function cleanFeatureValue(name, raw, sanitizeId) {
         streamerName,
         channelId: id(src.channelId),
         roleId: id(src.roleId),
+      };
+    }
+
+    case "radio": {
+      const streamUrl =
+        typeof src.streamUrl === "string" && src.streamUrl.trim()
+          ? src.streamUrl.trim().slice(0, 2048)
+          : null;
+      const streamType =
+        src.streamType === "hls" || src.streamType === "mp3"
+          ? src.streamType
+          : FEATURE_DEFAULTS.radio.streamType;
+      const reconnectMinutes = toInt(
+        src.reconnectMinutes,
+        FEATURE_DEFAULTS.radio.reconnectMinutes,
+        1,
+        1440,
+      );
+      return {
+        enabled: toBool(src.enabled),
+        voiceChannelId: id(src.voiceChannelId),
+        streamUrl,
+        streamType,
+        reconnectMinutes,
+        statusMessage:
+          typeof src.statusMessage === "string"
+            ? src.statusMessage.trim().slice(0, 200) || null
+            : null,
       };
     }
 
@@ -1171,4 +1207,4 @@ function registerFeaturesRoutes({
   );
 }
 
-module.exports = { registerFeaturesRoutes };
+module.exports = { registerFeaturesRoutes, diagnoseFeature };

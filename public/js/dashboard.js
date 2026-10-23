@@ -2569,11 +2569,121 @@
         staffByFeature.tickets,
       );
       const configTicketLabels = document.getElementById("configTicketLabels");
+      const ticketLabelAddBtn = document.getElementById("configTicketLabelsAddBtn");
+      const ticketLabelsChips = document.getElementById("configTicketLabelsChips");
+      function parseTicketLabelValues(value) {
+        return String(value || "")
+          .split(/[\n,]/)
+          .map(function (item) {
+            return String(item || "").trim();
+          })
+          .filter(Boolean)
+          .slice(0, 25);
+      }
+      function updateConfigOverview() {
+        const staffCount = document.getElementById("configOverviewStaffCount");
+        const channelsCount = document.getElementById("configOverviewChannelsCount");
+        const labelsCount = document.getElementById("configOverviewLabelsCount");
+        const languageValue = document.getElementById("configOverviewLanguageValue");
+        const timezoneValue = document.getElementById("configOverviewTimezoneValue");
+        const staffItem = document.getElementById("configOverviewStaffItem");
+        const channelsItem = document.getElementById("configOverviewChannelsItem");
+        const labelsItem = document.getElementById("configOverviewLabelsItem");
+        const languageItem = document.getElementById("configOverviewLanguageItem");
+        const timezoneItem = document.getElementById("configOverviewTimezoneItem");
+        if (!staffCount && !channelsCount && !labelsCount && !languageValue && !timezoneValue) {
+          return;
+        }
+        const staffRoleIds = Array.isArray(conf.staffRoleIds) ? conf.staffRoleIds : [];
+        const featureRoleIds = Object.keys(conf.staffRolesByFeature || {}).reduce(function (acc, key) {
+          const values = conf.staffRolesByFeature[key] || [];
+          return acc.concat(values);
+        }, []);
+        const totalStaff = new Set(staffRoleIds.concat(featureRoleIds)).size;
+        const totalChannels = [conf.logChannelId, conf.dashboardLogChannelId].filter(Boolean).length;
+        const totalLabels = parseTicketLabelValues(
+          configTicketLabels ? configTicketLabels.value : conf.ticketLabels || "",
+        ).length;
+        const languageText =
+          state.guildLanguage === "pt"
+            ? t("config_server_language_pt")
+            : state.guildLanguage === "en"
+              ? t("config_server_language_en")
+              : t("config_server_language_auto");
+        const timezoneText = state.guildTimezone || t("config_server_timezone_auto");
+        if (staffCount) staffCount.textContent = String(totalStaff);
+        if (channelsCount) channelsCount.textContent = String(totalChannels);
+        if (labelsCount) labelsCount.textContent = String(totalLabels);
+        if (languageValue) languageValue.textContent = languageText;
+        if (timezoneValue) timezoneValue.textContent = timezoneText;
+
+        const items = [
+          [staffItem, totalStaff > 0 ? "is-staff" : "is-muted"],
+          [channelsItem, totalChannels > 0 ? "is-channels" : "is-muted"],
+          [labelsItem, totalLabels > 0 ? "is-labels" : "is-muted"],
+          [languageItem, state.guildLanguage ? "is-language" : "is-muted"],
+          [timezoneItem, state.guildTimezone ? "is-timezone" : "is-muted"],
+        ];
+        items.forEach(function (entry) {
+          const el = entry[0];
+          const stateClass = entry[1];
+          if (!el) return;
+          el.className = "config-overview__item " + stateClass;
+        });
+      }
+      function renderTicketLabelsChips() {
+        if (!configTicketLabels || !ticketLabelsChips) return;
+        const labels = parseTicketLabelValues(configTicketLabels.value);
+        ticketLabelsChips.innerHTML = "";
+        if (!labels.length) {
+          const empty = document.createElement("span");
+          empty.className = "hint";
+          empty.textContent = t("config_ticket_labels_placeholder");
+          ticketLabelsChips.appendChild(empty);
+          return;
+        }
+        labels.forEach(function (label) {
+          const chip = document.createElement("span");
+          chip.className = "label-manager__chip";
+          chip.textContent = label;
+          const remove = document.createElement("button");
+          remove.type = "button";
+          remove.setAttribute("aria-label", "Remover etiqueta " + label);
+          remove.textContent = "×";
+          remove.addEventListener("click", function () {
+            const next = parseTicketLabelValues(configTicketLabels.value).filter(
+              function (item) {
+                return item !== label;
+              },
+            );
+            configTicketLabels.value = next.join(", ");
+            renderTicketLabelsChips();
+            markConfigDirty();
+          });
+          chip.appendChild(remove);
+          ticketLabelsChips.appendChild(chip);
+        });
+      }
       if (configTicketLabels) {
         configTicketLabels.value = Array.isArray(conf.ticketLabels)
           ? conf.ticketLabels.join(", ")
           : "";
+        configTicketLabels.addEventListener("input", function () {
+          renderTicketLabelsChips();
+        });
       }
+      if (ticketLabelAddBtn && configTicketLabels) {
+        ticketLabelAddBtn.addEventListener("click", function () {
+          const raw = String(configTicketLabels.value || "").trim();
+          if (!raw) return;
+          const labels = parseTicketLabelValues(raw);
+          configTicketLabels.value = labels.join(", ");
+          renderTicketLabelsChips();
+          markConfigDirty();
+        });
+      }
+      renderTicketLabelsChips();
+      updateConfigOverview();
 
       function getSelectedValues(sel) {
         const out = [];
@@ -4551,16 +4661,35 @@
         btn.type = "button";
         btn.className = "guild-select-item";
 
+        var mark = document.createElement("span");
+        mark.className = "guild-select-mark";
+        var markText = String(g.name || g.id || "S").trim();
+        mark.textContent = markText.charAt(0).toUpperCase() || "S";
+
+        var body = document.createElement("div");
+        body.className = "guild-select-item__body";
+
+        var row = document.createElement("div");
+        row.className = "guild-select-item__row";
+
         var name = document.createElement("div");
         name.className = "guild-select-name";
         name.textContent = g.name || g.id;
 
+        var badge = document.createElement("span");
+        badge.className = "guild-select-item__badge";
+        badge.textContent = "Server";
+        row.appendChild(name);
+        row.appendChild(badge);
+
         var sub = document.createElement("div");
-        sub.className = "hint";
+        sub.className = "hint guild-select-item__id";
         sub.textContent = g.id;
 
-        btn.appendChild(name);
-        btn.appendChild(sub);
+        body.appendChild(row);
+        body.appendChild(sub);
+        btn.appendChild(mark);
+        btn.appendChild(body);
 
         btn.addEventListener("click", function () {
           state.guildId = g.id;

@@ -106,6 +106,48 @@ async function runFeatureTest({ client, guild, feature, config, testMessage }) {
       }
     }
 
+    case "radio": {
+      const channel = await fetchSendable(client, c.voiceChannelId);
+      if (!channel) return { ok: false, error: "CHANNEL_REQUIRED" };
+      if (!c.streamUrl) return { ok: false, error: "STREAM_URL_REQUIRED" };
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15_000);
+      try {
+        const response = await fetch(c.streamUrl, {
+          method: "HEAD",
+          signal: controller.signal,
+        }).catch(async () =>
+          fetch(c.streamUrl, {
+            method: "GET",
+            signal: controller.signal,
+          }),
+        );
+
+        if (!response || !response.ok) {
+          return { ok: false, error: "STREAM_URL_UNAVAILABLE" };
+        }
+
+        return {
+          ok: true,
+          info: "radio_ok",
+          data: {
+            voiceChannelId: c.voiceChannelId,
+            streamUrl: c.streamUrl,
+            streamType: c.streamType || "mp3",
+            reconnectMinutes: c.reconnectMinutes || 15,
+          },
+        };
+      } catch (err) {
+        return {
+          ok: false,
+          error: err && err.code ? err.code : "STREAM_URL_UNAVAILABLE",
+        };
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
+
     case "messageLogs": {
       const channel = await fetchSendable(client, c.channelId);
       if (!channel) return { ok: false, error: "CHANNEL_REQUIRED" };
